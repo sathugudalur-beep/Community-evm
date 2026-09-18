@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Community EVM - Test</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f2f7;color:#111;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.wrap{max-width:680px;margin:auto;padding:16px}.card{background:#fff;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+h1{text-align:center;font-size:26px;margin:8px 0}.subtitle{text-align:center;color:#666}
+.pos{font-size:20px;font-weight:700;margin:0 0 10px}
+input[type=text]{display:block;width:100%;padding:14px;margin:7px 0;border:1px solid #bbb;border-radius:11px;font-size:17px}
+.choice{display:block;padding:15px;border:2px solid #ddd;border-radius:12px;margin:9px 0;font-size:18px}
+.choice:has(input:checked){border-color:#007aff;background:#eef6ff}
+input[type=radio]{transform:scale(1.35);margin-right:12px}
+button{width:100%;padding:16px;border:0;border-radius:13px;background:#007aff;color:#fff;font-size:18px;font-weight:700;margin-top:9px}
+button.danger{background:#c62828}.hidden{display:none!important}.big{text-align:center;font-size:22px;font-weight:700}.muted{text-align:center;color:#666}
+.result{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #eee;font-size:18px}
+.notice{background:#fff3cd;padding:12px;border-radius:12px;font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🗳️ Community EVM</h1>
+
+<section id="setup" class="card">
+<h2>Test Election Setup</h2>
+<p class="notice">TEST MODE: maximum 10 voters. Enter sample candidate names, then press Start Voting.</p>
+<div id="fields"></div>
+<button id="startBtn" type="button">🔒 START VOTING</button>
+</section>
+
+<section id="voting" class="hidden">
+<div class="card">
+<div class="big" id="voterLabel"></div>
+<p class="muted">Choose exactly one candidate for every position.</p>
+</div>
+<div id="ballot"></div>
+<div class="card">
+<button id="castBtn" type="button">🗳️ CAST VOTE</button>
+<button id="finishBtn" class="danger" type="button">🔴 FINISH VOTING</button>
+</div>
+</section>
+
+<section id="recorded" class="card hidden">
+<div class="big">🔊 BEEP</div>
+<p class="muted">Vote recorded successfully.</p>
+</section>
+
+<section id="results" class="card hidden">
+<h2>🏆 Final Results</h2>
+<div class="big" id="totalVotes"></div>
+<div id="resultBox"></div>
+<button type="button" onclick="location.reload()">↻ New Test</button>
+</section>
+</div>
+
+<script>
+(function(){
+const positions=["President","Vice President","Secretary","Treasurer"];
+const MAX=10;
+let names={}, counts={}, ballots=0, finished=false;
+
+const setup=document.getElementById("setup");
+const voting=document.getElementById("voting");
+const recorded=document.getElementById("recorded");
+const results=document.getElementById("results");
+const fields=document.getElementById("fields");
+const ballot=document.getElementById("ballot");
+
+positions.forEach(function(p,i){
+  const safe="p"+i;
+  fields.insertAdjacentHTML("beforeend",
+    '<div class="pos">'+p+'</div>'+
+    '<input type="text" id="'+safe+'a" placeholder="'+p+' — Candidate A" autocomplete="off">'+
+    '<input type="text" id="'+safe+'b" placeholder="'+p+' — Candidate B" autocomplete="off">'
+  );
+});
+
+document.getElementById("startBtn").addEventListener("click",startVoting);
+document.getElementById("castBtn").addEventListener("click",castVote);
+document.getElementById("finishBtn").addEventListener("click",finishVoting);
+
+function startVoting(){
+  positions.forEach(function(p,i){
+    const a=document.getElementById("p"+i+"a").value.trim();
+    const b=document.getElementById("p"+i+"b").value.trim();
+    names[p]=[a||"Candidate A",b||"Candidate B"];
+    counts[p]=[0,0];
+  });
+  ballots=0; finished=false;
+  setup.classList.add("hidden");
+  voting.classList.remove("hidden");
+  renderBallot();
+}
+
+function renderBallot(){
+  document.getElementById("voterLabel").textContent="Voter "+(ballots+1)+" of "+MAX;
+  ballot.innerHTML="";
+  positions.forEach(function(p,i){
+    let card=document.createElement("div");
+    card.className="card";
+    let title=document.createElement("div");
+    title.className="pos"; title.textContent=p; card.appendChild(title);
+    names[p].forEach(function(n,j){
+      let label=document.createElement("label");
+      label.className="choice";
+      label.innerHTML='<input type="radio" name="position'+i+'" value="'+j+'"> '+escapeHtml(n);
+      card.appendChild(label);
+    });
+    ballot.appendChild(card);
+  });
+}
+
+function castVote(){
+  if(finished)return;
+  const picks=[];
+  for(let i=0;i<positions.length;i++){
+    const selected=document.querySelector('input[name="position'+i+'"]:checked');
+    if(!selected){alert("Please select one candidate for every position.");return;}
+    picks.push(Number(selected.value));
+  }
+  positions.forEach(function(p,i){counts[p][picks[i]]++;});
+  ballots++;
+  beep();
+  voting.classList.add("hidden");
+  recorded.classList.remove("hidden");
+
+  setTimeout(function(){
+    recorded.classList.add("hidden");
+    if(ballots>=MAX){showResults();}
+    else {voting.classList.remove("hidden");renderBallot();}
+  },700);
+}
+
+function finishVoting(){
+  if(ballots===0){alert("No votes have been recorded yet.");return;}
+  if(confirm("Finish voting now? No more votes can be recorded.")){
+    finished=true; showResults();
+  }
+}
+
+function showResults(){
+  finished=true;
+  voting.classList.add("hidden");
+  recorded.classList.add("hidden");
+  results.classList.remove("hidden");
+  document.getElementById("totalVotes").textContent="Total ballots: "+ballots;
+  const box=document.getElementById("resultBox");box.innerHTML="";
+  positions.forEach(function(p){
+    box.insertAdjacentHTML("beforeend","<h3>"+p+"</h3>"+
+      '<div class="result"><span>'+escapeHtml(names[p][0])+'</span><b>'+counts[p][0]+"</b></div>"+
+      '<div class="result"><span>'+escapeHtml(names[p][1])+'</span><b>'+counts[p][1]+"</b></div>");
+  });
+}
+
+function beep(){
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx)return;
+    const ctx=new AudioCtx();
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.frequency.value=880; gain.gain.value=.15;
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.start();osc.stop(ctx.currentTime+.18);
+  }catch(e){}
+}
+
+function escapeHtml(x){
+ return x.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];});
+}
+})();
+</script>
+</body>
+</html>
