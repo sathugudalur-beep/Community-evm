@@ -24,8 +24,8 @@ button.danger{background:#c62828}.hidden{display:none!important}.big{text-align:
 <h1>🗳️ Community EVM</h1>
 
 <section id="setup" class="card">
-<h2>Test Election Setup</h2>
-<p class="notice">TEST MODE: maximum 10 voters. Enter sample candidate names, then press Start Voting.</p>
+<h2>Election Setup</h2>
+<p class="notice">400 VOTER VERSION: supports up to 400 voters. Enter candidate names, then press Start Voting.</p>
 <div id="fields"></div>
 <button id="startBtn" type="button">🔒 START VOTING</button>
 </section>
@@ -51,14 +51,14 @@ button.danger{background:#c62828}.hidden{display:none!important}.big{text-align:
 <h2>🏆 Final Results</h2>
 <div class="big" id="totalVotes"></div>
 <div id="resultBox"></div>
-<button type="button" onclick="location.reload()">↻ New Test</button>
+<button type="button" onclick="location.reload()">↻ New Election</button>
 </section>
 </div>
 
 <script>
 (function(){
 const positions=["President","Vice President","Secretary","Treasurer"];
-const MAX=10;
+const MAX=400;
 let names={}, counts={}, ballots=0, finished=false;
 
 const setup=document.getElementById("setup");
